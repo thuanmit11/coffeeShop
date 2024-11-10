@@ -11,7 +11,9 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByMenuIdAndStatusIn(Long shopId, List<String> status);
+    Order findByUserIdAndStatusIsNot(Long userId, String status);
     Order findByUserId(Long userId);
+
     @Query(value = """
             SELECT o.id, o.user_id, o.menu_id, o.status, o.queue_id FROM orders o
             INNER JOIN menu m
@@ -22,6 +24,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             AND STATUS = :status
             """, nativeQuery = true)
     List<Order> findByShopIdAndStatus(@Param("shopId") Long shopId, @Param("status") String status);
+
+    @Query(value = """
+            SELECT o.id, o.user_id, o.menu_id, o.status, o.queue_id FROM orders o
+            INNER JOIN menu m
+            ON o.menu_id  = m.id
+            INNER JOIN shops s ON
+            s.id  = m.shop_id
+            WHERE s.id = :shopId
+            """, nativeQuery = true)
+    List<Order> findByShopId(@Param("shopId") Long shopId);
 
     @Query(value = """
             SELECT o.id, o.user_id, o.menu_id, o.status, o.queue_id FROM orders o

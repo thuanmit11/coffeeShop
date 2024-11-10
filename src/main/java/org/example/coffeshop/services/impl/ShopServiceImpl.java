@@ -2,6 +2,7 @@ package org.example.coffeshop.services.impl;
 
 
 import org.example.coffeshop.dto.GetQueueResponse;
+import org.example.coffeshop.dto.GetShopsResponse;
 import org.example.coffeshop.dto.UpdateShopRequest;
 import org.example.coffeshop.entities.Order;
 import org.example.coffeshop.entities.Queue;
@@ -46,12 +47,14 @@ public class ShopServiceImpl implements ShopService {
         this.formContentFilter = formContentFilter;
     }
 
-    public List<Shop> getAllShops() {
-        return shopRepository.findAll();
+    public List<GetShopsResponse> getAllShops() {
+        List<Shop> result = shopRepository.findAll();
+        return result.stream().map(GetShopsResponse::new).toList();
     }
 
-    public Optional<Shop> getShopById(Long id) {
-        return shopRepository.findById(id);
+    public GetShopsResponse getShopById(Long id) {
+        Optional<Shop> shop = shopRepository.findById(id);
+        return shop.map(GetShopsResponse::new).orElse(null);
     }
 
     public String createShop(Shop shop) {
@@ -145,7 +148,7 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    public Shop getShopNearBy(String username) {
+    public GetShopsResponse getShopNearBy(String username) {
         Optional<User> optionalUser = userRepository.findByUsername(username);
         if (optionalUser.isEmpty()) {
             return null;
@@ -156,7 +159,8 @@ public class ShopServiceImpl implements ShopService {
         if (nearByShops.isEmpty()) {
             return null;
         }
-        return nearByShops.get(0);
+        Shop shop = nearByShops.get(0);
+        return new GetShopsResponse(shop);
     }
 
     @Override

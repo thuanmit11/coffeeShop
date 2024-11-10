@@ -1,6 +1,7 @@
 package org.example.coffeshop.controllers;
 
 import org.example.coffeshop.dto.GetQueueResponse;
+import org.example.coffeshop.dto.GetShopsResponse;
 import org.example.coffeshop.dto.UpdateShopRequest;
 import org.example.coffeshop.entities.Shop;
 import org.example.coffeshop.services.JWTService;
@@ -29,16 +30,14 @@ public class ShopController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Shop>> getAllShops() {
-        List<Shop> shops = shopService.getAllShops();
+    public ResponseEntity<List<GetShopsResponse>> getAllShops() {
+        List<GetShopsResponse> shops = shopService.getAllShops();
         return new ResponseEntity<>(shops, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Shop> getShopById(@PathVariable Long id) {
-        Optional<Shop> shop = shopService.getShopById(id);
-        return shop.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<GetShopsResponse> getShopById(@PathVariable Long id) {
+        return new ResponseEntity<>(shopService.getShopById(id), HttpStatus.NOT_FOUND);
     }
 
     @PostMapping
@@ -58,7 +57,7 @@ public class ShopController {
     }
 
     @GetMapping("/nearest")
-    public ResponseEntity<Shop> getClosetShop(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<GetShopsResponse> getClosetShop(@RequestHeader("Authorization") String authorizationHeader) {
         String username = jwtService.extractUserName(authorizationHeader.substring(7));
         return new ResponseEntity<>(shopService.getShopNearBy(username), HttpStatus.OK);
     }

@@ -13,5 +13,5 @@ public interface OrderService {
     String putInQueue(long orderId);
     Optional<Order> getOrderStatus(Long orderId);
     String cancelOrder(String username, Long orderId);
-    List<GetOrdersResponse> getAllByUserName(String username);
+    List<GetOrdersResponse> getAllByUserNameAndShopId(String username, Long shopId);
 }

@@ -9,4 +9,6 @@ public class GetOrdersResponse {
     private String itemName;
     private double price;
     private String customerName;
+    private int positionInQueue;
+    private double expectedTimeToDelivery;
 }

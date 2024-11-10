@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # Spring Boot Application
+  app:
+    build: .
+    container_name: coffee-shop-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/coffee_shop_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=1
+    depends_on:
+      - db
+
+  # PostgreSQL Database
+  db:
+    image: postgres:13
+    container_name: coffee-shop-db
+    environment:
+      POSTGRES_DB: coffee_shop_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

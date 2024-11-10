@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,7 +40,7 @@ public class OrderServiceImpl implements OrderService {
         if (user == null) {
             return null;
         }
-        Order order = orderRepository.findByUserId(user.getId());
+        Order order = orderRepository.findByUserIdAndStatusIsNot(user.getId(), Order.ORDER_STATUS_COMPLETED);
         if (!ObjectUtils.isEmpty(order)) {
             return null;
         }
@@ -102,21 +104,12 @@ public class OrderServiceImpl implements OrderService {
         userRepository.save(user);
 
         // Update queue
-        Shop curerntShop = order.getMenu().getShop();
-        List<Queue> queues = queueService.findByShopId(curerntShop.getId());
-        Optional<Queue> optionalQueue = queues.stream()
-                .filter(queue -> queue.getCurrentSize() == curerntShop.getMaxQueueSize()).findFirst();
-        if (optionalQueue.isPresent()) {
-            Queue queue = optionalQueue.get();
-            queue.setCurrentSize(queue.getCurrentSize() - 1);
-            queue.serveCustomer(order.getUser());
-            queueService.updateQueue(queue.getId(), queue);
-        }
-        Queue queue = queues.get(0);
-        queue.setCurrentSize(queue.getCurrentSize() - 1);
-        queue.serveCustomer(order.getUser());
+        Queue queue = order.getQueue();
+        queue.serveCustomer(user);
+        userRepository.save(user);
+        order.setQueue(null);
+        orderRepository.save(order);
         queueService.updateQueue(queue.getId(), queue);
-
 
         return "Order has been completed";
     }
@@ -157,24 +150,32 @@ public class OrderServiceImpl implements OrderService {
             }
             order.setStatus(Order.ORDER_STATUS_CANCELED);
             orderRepository.save(order);
+
+            Queue queue = order.getQueue();
+            if (!ObjectUtils.isEmpty(queue)) {
+                queue.serveCustomer(user);
+                userRepository.save(user);
+                queueService.updateQueue(queue.getId(), queue);
+            }
             return "Order cancelled";
         }
         return "Order not found";
     }
 
     @Override
-    public List<GetOrdersResponse> getAllByUserName(String username) {
+    public List<GetOrdersResponse> getAllByUserNameAndShopId(String username, Long shopId) {
         User user = userRepository.findByUsername(username).orElse(null);
         if (ObjectUtils.isEmpty(user)) {
             return null;
         }
         if (Role.OPERATOR.equals(user.getRole().getName())) {
-            List<Order> orders = orderRepository.findAll();
+            List<Order> orders = orderRepository.findByShopId(shopId);
             return orders.stream().map(order -> {
                 GetOrdersResponse response = new GetOrdersResponse();
                 response.setItemName(order.getMenu().getItemName());
                 response.setPrice(order.getMenu().getPrice());
                 response.setStatus(order.getStatus());
+                response.setCustomerName(order.getUser().getUsername());
                 return response;
             }).toList();
         }
@@ -183,10 +184,22 @@ public class OrderServiceImpl implements OrderService {
             return List.of();
         }
         GetOrdersResponse response = new GetOrdersResponse();
+        Queue currentQueue = order.getQueue();
+        if (!ObjectUtils.isEmpty(currentQueue)) {
+            List<Order> orderInQueue = currentQueue.getOrders();
+            orderInQueue.sort(Comparator.comparing(Order::getId));
+            int positionInQueue = orderInQueue.indexOf(order) + 1;
+            double expectedTime = 15 * positionInQueue;
+            response.setPositionInQueue(positionInQueue);
+            response.setExpectedTimeToDelivery(expectedTime);
+        } else {
+            response.setPositionInQueue(-1);
+        }
         response.setItemName(order.getMenu().getItemName());
         response.setCustomerName(order.getUser().getUsername());
         response.setPrice(order.getMenu().getPrice());
         response.setStatus(order.getStatus());
+
         return List.of(response);
     }
 }

@@ -11,7 +11,6 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/order")
@@ -42,10 +41,11 @@ public class OrderController {
         return new ResponseEntity<>(orderService.serveOrder(orderId), HttpStatus.OK);
     }
 
-    @GetMapping
-    public ResponseEntity<List<GetOrdersResponse>> getOrders(@RequestHeader("Authorization") String authorizationHeader) {
+    @GetMapping("{shopId}")
+    public ResponseEntity<List<GetOrdersResponse>> getOrders(@RequestHeader("Authorization") String authorizationHeader,
+                                                             @PathVariable Long shopId) {
         String username = jwtService.extractUserName(authorizationHeader.substring(7));
-        return new ResponseEntity<>(orderService.getAllByUserName(username), HttpStatus.OK);
+        return new ResponseEntity<>(orderService.getAllByUserNameAndShopId(username, shopId), HttpStatus.OK);
     }
 
     @PutMapping("{orderId}/queue")
